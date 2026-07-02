@@ -148,7 +148,9 @@ RID Box3DPhysicsServer3D::_space_create() {
 	const RID rid = space_owner.make_rid(space);
 	space->set_rid(rid);
 
-	auto* default_area = memnew(Box3DAreaImpl3D);
+	const RID default_area_rid = _area_create();
+	Box3DAreaImpl3D* default_area = area_owner.get_or_null(default_area_rid);
+	ERR_FAIL_NULL_V(default_area, rid);
 	default_area->set_default_area(true);
 	default_area->set_space(space);
 	space->set_default_area(default_area);
@@ -1212,7 +1214,10 @@ void Box3DPhysicsServer3D::_free_rid(const RID& p_rid) {
 	if (Box3DSpace3D* space = space_owner.get_or_null(p_rid)) {
 		Box3DAreaImpl3D* default_area = space->get_default_area();
 		if (default_area != nullptr) {
+			const RID default_area_rid = default_area->get_rid();
+			space->unregister_area(default_area);
 			memdelete(default_area);
+			area_owner.free(default_area_rid);
 		}
 		active_spaces.erase(space);
 		memdelete(space);
